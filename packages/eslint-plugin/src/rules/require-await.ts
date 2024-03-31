@@ -81,6 +81,20 @@ export default createRule({
           data: {
             name: upperCaseFirst(getFunctionNameWithKind(node)),
           },
+          fix(fixer) {
+            const asyncToken = context.sourceCode.getFirstToken(node);
+            if (!asyncToken || asyncToken.value !== 'async') {
+              return null;
+            }
+            const functionToken = context.sourceCode.getTokenAfter(asyncToken)!;
+            if (!functionToken) {
+              return null;
+            }
+            return fixer.removeRange([
+              asyncToken.range[0],
+              functionToken.range[0],
+            ]);
+          },
         });
       }
 

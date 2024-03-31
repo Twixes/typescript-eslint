@@ -271,6 +271,11 @@ async function numberOne(): Promise<number> {
   return 1;
 }
       `,
+      output: `
+function numberOne(): Promise<number> {
+  return 1;
+}
+      `,
       errors: [
         {
           messageId: 'missingAwait',
@@ -287,6 +292,11 @@ const numberOne = async function (): Promise<number> {
   return 1;
 };
       `,
+      output: `
+const numberOne = function (): Promise<number> {
+  return 1;
+};
+      `,
       errors: [
         {
           messageId: 'missingAwait',
@@ -299,6 +309,7 @@ const numberOne = async function (): Promise<number> {
     {
       // Async arrow function expression with no await
       code: 'const numberOne = async (): Promise<number> => 1;',
+      output: 'const numberOne = (): Promise<number> => 1;',
       errors: [
         {
           messageId: 'missingAwait',
@@ -312,6 +323,13 @@ const numberOne = async function (): Promise<number> {
       // non-async function with await inside async function without await
       code: `
         async function foo() {
+          function nested() {
+            await doSomething();
+          }
+        }
+      `,
+      output: `
+        function foo() {
           function nested() {
             await doSomething();
           }
@@ -332,6 +350,11 @@ async function* foo(): void {
   doSomething();
 }
       `,
+      output: `
+function* foo(): void {
+  doSomething();
+}
+      `,
       errors: [
         {
           messageId: 'missingAwait',
@@ -344,6 +367,11 @@ async function* foo(): void {
     {
       code: `
 async function* foo() {
+  yield 1;
+}
+      `,
+      output: `
+function* foo() {
   yield 1;
 }
       `,
@@ -362,6 +390,11 @@ const foo = async function* () {
   console.log('bar');
 };
       `,
+      output: `
+const foo = function* () {
+  console.log('bar');
+};
+      `,
       errors: [
         {
           messageId: 'missingAwait',
@@ -377,6 +410,11 @@ async function* asyncGenerator() {
   yield 1;
 }
       `,
+      output: `
+function* asyncGenerator() {
+  yield 1;
+}
+      `,
       errors: [
         {
           messageId: 'missingAwait',
@@ -389,6 +427,11 @@ async function* asyncGenerator() {
     {
       code: `
 async function* asyncGenerator(source: Iterable<any>) {
+  yield* source;
+}
+      `,
+      output: `
+function* asyncGenerator(source: Iterable<any>) {
   yield* source;
 }
       `,
@@ -412,6 +455,16 @@ async function* asyncGenerator(source: Iterable<any> | AsyncIterable<any>) {
   }
 }
       `,
+      output: `
+function isAsyncIterable(value: unknown): value is AsyncIterable<any> {
+  return true;
+}
+function* asyncGenerator(source: Iterable<any> | AsyncIterable<any>) {
+  if (!isAsyncIterable(source)) {
+    yield* source;
+  }
+}
+      `,
       errors: [
         {
           messageId: 'missingAwait',
@@ -427,6 +480,14 @@ function* syncGenerator() {
   yield 1;
 }
 async function* asyncGenerator() {
+  yield* syncGenerator();
+}
+      `,
+      output: `
+function* syncGenerator() {
+  yield 1;
+}
+function* asyncGenerator() {
   yield* syncGenerator();
 }
       `,
@@ -538,6 +599,11 @@ for await (let num of asyncIterable) {
           doSomething();
         }
       `,
+      output: `
+        function foo() {
+          doSomething();
+        }
+      `,
       errors: [
         {
           messageId: 'missingAwait',
@@ -547,6 +613,11 @@ for await (let num of asyncIterable) {
     },
     {
       code: `
+        (async function () {
+          doSomething();
+        });
+      `,
+      output: `
         (async function () {
           doSomething();
         });
@@ -564,6 +635,11 @@ for await (let num of asyncIterable) {
           doSomething();
         };
       `,
+      output: `
+        () => {
+          doSomething();
+        };
+      `,
       errors: [
         {
           messageId: 'missingAwait',
@@ -573,6 +649,7 @@ for await (let num of asyncIterable) {
     },
     {
       code: 'async () => doSomething();',
+      output: '() => doSomething();',
       errors: [
         {
           messageId: 'missingAwait',
@@ -584,6 +661,13 @@ for await (let num of asyncIterable) {
       code: `
         ({
           async foo() {
+            doSomething();
+          },
+        });
+      `,
+      output: `
+        ({
+          foo() {
             doSomething();
           },
         });
@@ -603,6 +687,13 @@ for await (let num of asyncIterable) {
           }
         }
       `,
+      output: `
+        class A {
+          foo() {
+            doSomething();
+          }
+        }
+      `,
       errors: [
         {
           messageId: 'missingAwait',
@@ -614,6 +705,13 @@ for await (let num of asyncIterable) {
       code: `
         (class {
           async foo() {
+            doSomething();
+          }
+        });
+      `,
+      output: `
+        (class {
+          foo() {
             doSomething();
           }
         });
@@ -633,6 +731,13 @@ for await (let num of asyncIterable) {
           }
         });
       `,
+      output: `
+        (class {
+          ''() {
+            doSomething();
+          }
+        });
+      `,
       errors: [
         {
           messageId: 'missingAwait',
@@ -643,6 +748,13 @@ for await (let num of asyncIterable) {
     {
       code: `
         async function foo() {
+          async () => {
+            await doSomething();
+          };
+        }
+      `,
+      output: `
+        function foo() {
           async () => {
             await doSomething();
           };
@@ -659,6 +771,13 @@ for await (let num of asyncIterable) {
       code: `
         async function foo() {
           await (async () => {
+            doSomething();
+          });
+        }
+      `,
+      output: `
+        async function foo() {
+          await (() => {
             doSomething();
           });
         }
